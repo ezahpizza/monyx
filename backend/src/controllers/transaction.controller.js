@@ -7,6 +7,7 @@ const { parseTransaction } = require('../services/gemini.service');
  * @access  Private
  */
 const parseTransactionFromText = async (req, res) => {
+    console.log('parseTransactionFromText req.user:', req.user);
     const { text } = req.body;
     try {
         const parsedData = await parseTransaction(text);
@@ -15,6 +16,7 @@ const parseTransactionFromText = async (req, res) => {
         }
         res.json(parsedData);
     } catch (error) {
+        console.error('Error in parseTransactionFromText:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 };
@@ -25,10 +27,10 @@ const parseTransactionFromText = async (req, res) => {
  * @access  Private
  */
 const createTransaction = async (req, res) => {
-    const { amount, category, description, type, date } = req.body;
+    const { amount, category, description, type, date, userId } = req.body; // Add userId to destructuring
     try {
         const transaction = await Transaction.create({
-            userId: req.user._id,
+            userId, // Use userId directly from req.body
             amount,
             category,
             description,
@@ -37,6 +39,7 @@ const createTransaction = async (req, res) => {
         });
         res.status(201).json(transaction);
     } catch (error) {
+        console.error('Error in createTransaction:', error);
         res.status(400).json({ error: 'Invalid transaction data' });
     }
 };
@@ -47,9 +50,8 @@ const createTransaction = async (req, res) => {
  * @access  Private
  */
 const getTransactions = async (req, res) => {
-    const { category, startDate, endDate, search } = req.query;
-    const query = { userId: req.user._id };
-
+    const { category, startDate, endDate, search, userId } = req.query; // Add userId to destructuring
+    const query = { userId }; // Use userId directly from req.query
     if (category) {
         query.category = category;
     }
@@ -64,6 +66,7 @@ const getTransactions = async (req, res) => {
         const transactions = await Transaction.find(query).sort({ date: -1 });
         res.json(transactions);
     } catch (error) {
+        console.error('Error in getTransactions:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 };
@@ -74,14 +77,15 @@ const getTransactions = async (req, res) => {
  * @access  Private
  */
 const updateTransaction = async (req, res) => {
+    console.log('updateTransaction req.user:', req.user); 
     const { id } = req.params;
-    const { amount, category, description, type, date } = req.body;
+    const { amount, category, description, type, date, userId } = req.body; 
 
     try {
         const transaction = await Transaction.findById(id);
 
-        if (!transaction || transaction.userId.toString() !== req.user._id.toString()) {
-            return res.status(404).json({ error: 'Transaction not found' });
+        if (!transaction || transaction.userId !== userId) { 
+            return res.status(404).json({ error: 'Transaction not found or unauthorized' });
         }
 
         transaction.amount = amount || transaction.amount;
@@ -93,6 +97,7 @@ const updateTransaction = async (req, res) => {
         const updatedTransaction = await transaction.save();
         res.json(updatedTransaction);
     } catch (error) {
+        console.error('Error in updateTransaction:', error);
         res.status(400).json({ error: 'Invalid transaction data' });
     }
 };
@@ -103,18 +108,21 @@ const updateTransaction = async (req, res) => {
  * @access  Private
  */
 const deleteTransaction = async (req, res) => {
+    console.log('deleteTransaction req.user:', req.user); // This console.log will remain for now, as req.user is not used for userId
     const { id } = req.params;
+    const { userId } = req.query; // Get userId from query for authorization
 
     try {
         const transaction = await Transaction.findById(id);
 
-        if (!transaction || transaction.userId.toString() !== req.user._id.toString()) {
-            return res.status(404).json({ error: 'Transaction not found' });
+        if (!transaction || transaction.userId !== userId) { 
+            return res.status(404).json({ error: 'Transaction not found or unauthorized' });
         }
 
         await transaction.remove();
         res.json({ message: 'Transaction removed' });
     } catch (error) {
+        console.error('Error in deleteTransaction:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 };

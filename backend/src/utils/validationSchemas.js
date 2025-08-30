@@ -1,6 +1,7 @@
 const Joi = require('joi');
 
 const transactionSchema = Joi.object({
+    userId: Joi.string().required(),
     amount: Joi.number().required(),
     category: Joi.string().required(),
     description: Joi.string().required(),

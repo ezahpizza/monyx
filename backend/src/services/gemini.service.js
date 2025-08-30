@@ -1,6 +1,6 @@
-const { GoogleGenerativeAI } = require('@google/genai');
+const { GoogleGenAI } = require('@google/genai');
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 /**
  * Parses a natural language transaction string using the Gemini API.
@@ -9,17 +9,39 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
  */
 async function parseTransaction(input) {
     try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
-
+        console.log('Input to Gemini API:', input);
         const prompt = `Parse the following transaction input and return a JSON object with "amount", "category", "description", and "type" (either "income" or "expense"). Ensure the amount is a number. Category should be one of: Food, Transport, Shopping, Bills, Entertainment, Health, Groceries, Other. Description should be a concise summary. Input: "${input}"`;
 
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const text = await response.text();
-        
-        // Clean the response to get a valid JSON string
-        const jsonString = text.replace(/```json|```/g, '').trim();
-        const parsedData = JSON.parse(jsonString);
+        const result = await genAI.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: prompt
+        });
+
+        let text = '';
+        if (result && result.candidates && result.candidates.length > 0 && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts.length > 0) {
+            text = result.candidates[0].content.parts[0].text || '';
+        }
+
+        if (!text) {
+            throw new Error('Empty or invalid response from Gemini API');
+        }
+
+        // Extract JSON string from the response
+        const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/);
+        let jsonString = '';
+        if (jsonMatch && jsonMatch[1]) {
+            jsonString = jsonMatch[1].trim();
+        } else {
+            // Fallback if no ```json block is found, try to parse the whole text
+            jsonString = text.trim();
+        }
+
+        let parsedData;
+        try {
+            parsedData = JSON.parse(jsonString);
+        } catch (e) {
+            throw new Error('Failed to parse Gemini response as JSON: ' + jsonString);
+        }
 
         // Add a confidence score
         parsedData.confidence = 0.95; // Placeholder confidence

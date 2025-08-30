@@ -6,9 +6,9 @@ const Transaction = require('../models/transaction.model');
  * @access  Private
  */
 const getSummary = async (req, res) => {
-    const { startDate, endDate } = req.query;
-    const query = { userId: req.user._id };
-
+    const { startDate, endDate, userId } = req.query;
+    const user_id = req.user?.id || userId;
+    const query = { userId: user_id };
     if (startDate && endDate) {
         query.date = { $gte: new Date(startDate), $lte: new Date(endDate) };
     }
@@ -28,6 +28,7 @@ const getSummary = async (req, res) => {
 
         res.json({ income, expenses, savings });
     } catch (error) {
+        console.error('Error in getSummary:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 };
@@ -38,9 +39,9 @@ const getSummary = async (req, res) => {
  * @access  Private
  */
 const getCategorySpending = async (req, res) => {
-    const { startDate, endDate } = req.query;
-    const query = { userId: req.user._id, type: 'expense' };
-
+    const { startDate, endDate, userId } = req.query;
+    const user_id = req.user?.id || userId;
+    const query = { userId: user_id, type: 'expense' };
     if (startDate && endDate) {
         query.date = { $gte: new Date(startDate), $lte: new Date(endDate) };
     }
@@ -54,6 +55,7 @@ const getCategorySpending = async (req, res) => {
 
         res.json(categories);
     } catch (error) {
+        console.error('Error in getCategorySpending:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 };
@@ -64,9 +66,9 @@ const getCategorySpending = async (req, res) => {
  * @access  Private
  */
 const getSpendingTrends = async (req, res) => {
-    const { startDate, endDate } = req.query;
-    const query = { userId: req.user._id, type: 'expense' };
-
+    const { startDate, endDate, userId } = req.query;
+    const user_id = req.user?.id || userId;
+    const query = { userId: user_id, type: 'expense' };
     if (startDate && endDate) {
         query.date = { $gte: new Date(startDate), $lte: new Date(endDate) };
     }
@@ -86,6 +88,7 @@ const getSpendingTrends = async (req, res) => {
 
         res.json(trends);
     } catch (error) {
+        console.error('Error in getSpendingTrends:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 };

@@ -1,27 +1,13 @@
-const jwt = require('jsonwebtoken');
-const User = require('../models/user.model');
-
-/**
- * Middleware to protect routes that require authentication.
- */
-const protect = async (req, res, next) => {
-    let token;
-
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-        try {
-            token = req.headers.authorization.split(' ')[1];
-            const decoded = jwt.verify(token, process.env.JWT_SECRET);
-            req.user = await User.findById(decoded.id).select('-password');
-            next();
-        } catch (error) {
-            console.error(error);
-            res.status(401).json({ error: 'Not authorized, token failed' });
-        }
+// NO AUTHENTICATION MIDDLEWARE NEEDED FOR NOW
+// Simple CORS middleware 
+const cors = (req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(200);
     }
-
-    if (!token) {
-        res.status(401).json({ error: 'Not authorized, no token' });
-    }
+    next();
 };
 
-module.exports = { protect };
+module.exports = { cors };
