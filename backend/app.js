@@ -1,4 +1,5 @@
 
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -8,9 +9,11 @@ const { errorMiddleware } = require('./src/middlewares/error.middleware');
 
 const app = express();
 
+
 // Middleware
+const allowedOrigin = process.env.CLIENT_URL || 'http://localhost:8080';
 app.use(cors({
-    origin: 'http://localhost:8080',
+    origin: allowedOrigin,
     credentials: true
 }));
 
@@ -26,7 +29,7 @@ mongoose.connect(process.env.MONGO_URI)
     console.error('Failed to connect to MongoDB', err);
 });
 
-app.use('/', apiRoutes);
+ app.use('/', apiRoutes);
 
 // Error Handling Middleware
 app.use(errorMiddleware);

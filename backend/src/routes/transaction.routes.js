@@ -10,9 +10,12 @@ const {
 const { validate } = require('../middlewares/validation.middleware');
 const { transactionSchema, parseTransactionSchema } = require('../utils/validationSchemas');
 
-
 router.post('/parse', validate(parseTransactionSchema), parseTransactionFromText);
-router.route('/').post(validate(transactionSchema), createTransaction).get(getTransactions);
-router.route('/:id').put(validate(transactionSchema), updateTransaction).delete(deleteTransaction);
+router.route('/')
+    .post(validate(transactionSchema), createTransaction)
+    .get(getTransactions);
+router.route('/:id')
+    .put(validate(transactionSchema), updateTransaction)
+    .delete(deleteTransaction);
 
 module.exports = router;

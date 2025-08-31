@@ -6,7 +6,6 @@ const {
     getSpendingTrends,
 } = require('../controllers/analytics.controller');
 
-
 router.get('/summary', getSummary);
 router.get('/categories', getCategorySpending);
 router.get('/trends', getSpendingTrends);

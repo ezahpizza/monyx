@@ -26,11 +26,13 @@ const parseTransactionFromText = async (req, res) => {
  * @route   POST /api/transactions
  * @access  Private
  */
+const mongoose = require('mongoose');
 const createTransaction = async (req, res) => {
-    const { amount, category, description, type, date, userId } = req.body; // Add userId to destructuring
+    const { amount, category, description, type, date, userId } = req.body;
+    if (!userId) return res.status(400).json({ error: 'userId required' });
     try {
         const transaction = await Transaction.create({
-            userId, // Use userId directly from req.body
+            userId,
             amount,
             category,
             description,
@@ -50,8 +52,9 @@ const createTransaction = async (req, res) => {
  * @access  Private
  */
 const getTransactions = async (req, res) => {
-    const { category, startDate, endDate, search, userId } = req.query; // Add userId to destructuring
-    const query = { userId }; // Use userId directly from req.query
+    const { category, startDate, endDate, search, userId } = req.query;
+    if (!userId) return res.status(400).json({ error: 'userId required' });
+    const query = { userId };
     if (category) {
         query.category = category;
     }
@@ -61,7 +64,6 @@ const getTransactions = async (req, res) => {
     if (search) {
         query.description = { $regex: search, $options: 'i' };
     }
-
     try {
         const transactions = await Transaction.find(query).sort({ date: -1 });
         res.json(transactions);
@@ -77,23 +79,19 @@ const getTransactions = async (req, res) => {
  * @access  Private
  */
 const updateTransaction = async (req, res) => {
-    console.log('updateTransaction req.user:', req.user); 
     const { id } = req.params;
-    const { amount, category, description, type, date, userId } = req.body; 
-
+    const { amount, category, description, type, date, userId } = req.body;
+    if (!userId) return res.status(400).json({ error: 'userId required' });
     try {
-        const transaction = await Transaction.findById(id);
-
-        if (!transaction || transaction.userId !== userId) { 
+        const transaction = await Transaction.findOne({ _id: id, userId });
+        if (!transaction) {
             return res.status(404).json({ error: 'Transaction not found or unauthorized' });
         }
-
         transaction.amount = amount || transaction.amount;
         transaction.category = category || transaction.category;
         transaction.description = description || transaction.description;
         transaction.type = type || transaction.type;
         transaction.date = date || transaction.date;
-
         const updatedTransaction = await transaction.save();
         res.json(updatedTransaction);
     } catch (error) {
@@ -108,17 +106,14 @@ const updateTransaction = async (req, res) => {
  * @access  Private
  */
 const deleteTransaction = async (req, res) => {
-    console.log('deleteTransaction req.user:', req.user); // This console.log will remain for now, as req.user is not used for userId
     const { id } = req.params;
-    const { userId } = req.query; // Get userId from query for authorization
-
+    const { userId } = req.body;
+    if (!userId) return res.status(400).json({ error: 'userId required' });
     try {
-        const transaction = await Transaction.findById(id);
-
-        if (!transaction || transaction.userId !== userId) { 
+        const transaction = await Transaction.findOne({ _id: id, userId });
+        if (!transaction) {
             return res.status(404).json({ error: 'Transaction not found or unauthorized' });
         }
-
         await transaction.remove();
         res.json({ message: 'Transaction removed' });
     } catch (error) {

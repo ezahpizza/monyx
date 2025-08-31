@@ -5,27 +5,23 @@ const Transaction = require('../models/transaction.model');
  * @route   GET /api/analytics/summary
  * @access  Private
  */
+const mongoose = require('mongoose');
 const getSummary = async (req, res) => {
     const { startDate, endDate, userId } = req.query;
-    const user_id = req.user?.id || userId;
-    const query = { userId: user_id };
+    if (!userId) return res.status(400).json({ error: 'userId required' });
+    const query = { userId };
     if (startDate && endDate) {
         query.date = { $gte: new Date(startDate), $lte: new Date(endDate) };
     }
-
     try {
         const transactions = await Transaction.find(query);
-
         const income = transactions
             .filter(t => t.type === 'income')
             .reduce((acc, t) => acc + t.amount, 0);
-
         const expenses = transactions
             .filter(t => t.type === 'expense')
             .reduce((acc, t) => acc + t.amount, 0);
-
         const savings = income - expenses;
-
         res.json({ income, expenses, savings });
     } catch (error) {
         console.error('Error in getSummary:', error);
@@ -40,19 +36,17 @@ const getSummary = async (req, res) => {
  */
 const getCategorySpending = async (req, res) => {
     const { startDate, endDate, userId } = req.query;
-    const user_id = req.user?.id || userId;
-    const query = { userId: user_id, type: 'expense' };
+    if (!userId) return res.status(400).json({ error: 'userId required' });
+    const query = { userId, type: 'expense' };
     if (startDate && endDate) {
         query.date = { $gte: new Date(startDate), $lte: new Date(endDate) };
     }
-
     try {
         const categories = await Transaction.aggregate([
             { $match: query },
             { $group: { _id: '$category', total: { $sum: '$amount' } } },
             { $project: { name: '$_id', total: 1, _id: 0 } },
         ]);
-
         res.json(categories);
     } catch (error) {
         console.error('Error in getCategorySpending:', error);
@@ -67,12 +61,11 @@ const getCategorySpending = async (req, res) => {
  */
 const getSpendingTrends = async (req, res) => {
     const { startDate, endDate, userId } = req.query;
-    const user_id = req.user?.id || userId;
-    const query = { userId: user_id, type: 'expense' };
+    if (!userId) return res.status(400).json({ error: 'userId required' });
+    const query = { userId, type: 'expense' };
     if (startDate && endDate) {
         query.date = { $gte: new Date(startDate), $lte: new Date(endDate) };
     }
-
     try {
         const trends = await Transaction.aggregate([
             { $match: query },
@@ -85,7 +78,6 @@ const getSpendingTrends = async (req, res) => {
             { $sort: { _id: 1 } },
             { $project: { date: '$_id', total: 1, _id: 0 } },
         ]);
-
         res.json(trends);
     } catch (error) {
         console.error('Error in getSpendingTrends:', error);
