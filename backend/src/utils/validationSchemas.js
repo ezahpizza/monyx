@@ -13,7 +13,10 @@ const parseTransactionSchema = Joi.object({
     text: Joi.string().required(),
 });
 
+const ocrTransactionSchema = Joi.object({}); // No body fields, file is in multipart
+
 module.exports = {
     transactionSchema,
     parseTransactionSchema,
+    ocrTransactionSchema,
 };

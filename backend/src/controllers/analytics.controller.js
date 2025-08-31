@@ -7,9 +7,24 @@ const Transaction = require('../models/transaction.model');
  */
 const mongoose = require('mongoose');
 const getSummary = async (req, res) => {
-    const { startDate, endDate, userId } = req.query;
+    let { startDate, endDate, userId, period } = req.query;
     if (!userId) return res.status(400).json({ error: 'userId required' });
     const query = { userId };
+    // Simplified period calculation
+    if (!(startDate && endDate) && period) {
+        const now = new Date();
+        if (period === 'weekly') {
+            endDate = now.toISOString().slice(0, 10);
+            const start = new Date(now);
+            start.setDate(start.getDate() - 6);
+            startDate = start.toISOString().slice(0, 10);
+        } else if (period === 'monthly') {
+            endDate = now.toISOString().slice(0, 10);
+            const start = new Date(now);
+            start.setDate(start.getDate() - 29);
+            startDate = start.toISOString().slice(0, 10);
+        }
+    }
     if (startDate && endDate) {
         query.date = { $gte: new Date(startDate), $lte: new Date(endDate) };
     }
@@ -35,9 +50,24 @@ const getSummary = async (req, res) => {
  * @access  Private
  */
 const getCategorySpending = async (req, res) => {
-    const { startDate, endDate, userId } = req.query;
+    let { startDate, endDate, userId, period } = req.query;
     if (!userId) return res.status(400).json({ error: 'userId required' });
     const query = { userId, type: 'expense' };
+    // Simplified period calculation
+    if (!(startDate && endDate) && period) {
+        const now = new Date();
+        if (period === 'weekly') {
+            endDate = now.toISOString().slice(0, 10);
+            const start = new Date(now);
+            start.setDate(start.getDate() - 6);
+            startDate = start.toISOString().slice(0, 10);
+        } else if (period === 'monthly') {
+            endDate = now.toISOString().slice(0, 10);
+            const start = new Date(now);
+            start.setDate(start.getDate() - 29);
+            startDate = start.toISOString().slice(0, 10);
+        }
+    }
     if (startDate && endDate) {
         query.date = { $gte: new Date(startDate), $lte: new Date(endDate) };
     }
@@ -60,9 +90,24 @@ const getCategorySpending = async (req, res) => {
  * @access  Private
  */
 const getSpendingTrends = async (req, res) => {
-    const { startDate, endDate, userId } = req.query;
+    let { startDate, endDate, userId, period } = req.query;
     if (!userId) return res.status(400).json({ error: 'userId required' });
     const query = { userId, type: 'expense' };
+    // Simplified period calculation
+    if (!(startDate && endDate) && period) {
+        const now = new Date();
+        if (period === 'weekly') {
+            endDate = now.toISOString().slice(0, 10);
+            const start = new Date(now);
+            start.setDate(start.getDate() - 6);
+            startDate = start.toISOString().slice(0, 10);
+        } else if (period === 'monthly') {
+            endDate = now.toISOString().slice(0, 10);
+            const start = new Date(now);
+            start.setDate(start.getDate() - 29);
+            startDate = start.toISOString().slice(0, 10);
+        }
+    }
     if (startDate && endDate) {
         query.date = { $gte: new Date(startDate), $lte: new Date(endDate) };
     }

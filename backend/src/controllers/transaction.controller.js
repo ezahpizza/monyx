@@ -1,5 +1,5 @@
 const Transaction = require('../models/transaction.model');
-const { parseTransaction } = require('../services/gemini.service');
+const { parseTransactionWithDate } = require('../services/gemini.service');
 
 /**
  * @desc    Parse transaction from natural language
@@ -7,10 +7,10 @@ const { parseTransaction } = require('../services/gemini.service');
  * @access  Private
  */
 const parseTransactionFromText = async (req, res) => {
-    console.log('parseTransactionFromText req.user:', req.user);
     const { text } = req.body;
     try {
-        const parsedData = await parseTransaction(text);
+        const systemDate = new Date().toISOString();
+        const parsedData = await parseTransactionWithDate(text, systemDate);
         if (parsedData.error) {
             return res.status(400).json(parsedData);
         }
@@ -52,11 +52,26 @@ const createTransaction = async (req, res) => {
  * @access  Private
  */
 const getTransactions = async (req, res) => {
-    const { category, startDate, endDate, search, userId } = req.query;
+    let { category, startDate, endDate, search, userId, period } = req.query;
     if (!userId) return res.status(400).json({ error: 'userId required' });
     const query = { userId };
     if (category) {
         query.category = category;
+    }
+    // Simplified period calculation
+    if (!(startDate && endDate) && period) {
+        const now = new Date();
+        if (period === 'weekly') {
+            endDate = now.toISOString().slice(0, 10);
+            const start = new Date(now);
+            start.setDate(start.getDate() - 6);
+            startDate = start.toISOString().slice(0, 10);
+        } else if (period === 'monthly') {
+            endDate = now.toISOString().slice(0, 10);
+            const start = new Date(now);
+            start.setDate(start.getDate() - 29);
+            startDate = start.toISOString().slice(0, 10);
+        }
     }
     if (startDate && endDate) {
         query.date = { $gte: new Date(startDate), $lte: new Date(endDate) };
@@ -114,7 +129,7 @@ const deleteTransaction = async (req, res) => {
         if (!transaction) {
             return res.status(404).json({ error: 'Transaction not found or unauthorized' });
         }
-        await transaction.remove();
+        await Transaction.deleteOne({ _id: id, userId });
         res.json({ message: 'Transaction removed' });
     } catch (error) {
         console.error('Error in deleteTransaction:', error);
