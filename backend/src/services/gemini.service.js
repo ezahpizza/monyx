@@ -124,5 +124,82 @@ async function parseTransactionWithDate(inputText, systemDate, ocrDate) {
     }
 }
 
+/**
+ * Analyzes spending habits from transaction data using Gemini API.
+ * @param {Array} transactions - Array of transaction objects.
+ * @param {string} systemDate - Current system date in ISO string.
+ * @returns {Promise<object>} The spending habits analysis.
+ */
+async function analyzeSpending(transactions, systemDate) {
+    try {
+        const payload = {
+            systemDate,
+            transactions: transactions.map(t => ({
+                amount: t.amount,
+                category: t.category,
+                description: t.description,
+                date: t.date.toISOString(),
+                type: t.type
+            }))
+        };
 
-module.exports = { parseTransaction, parseTransactionWithDate };
+        const prompt = `Analyze the user's spending habits based on the provided transaction data. Focus on the last 60 days of data. Provide insights in the following JSON format:
+
+{
+  "patterns": "A brief summary of key spending categories and patterns.",
+  "recurringExpenses": "List of recurring expenses, e.g., 'Netflix $15 monthly, Gym $40 monthly'.",
+  "spikes": "Any unusual spending spikes or high one-time purchases.",
+  "suggestions": "Personalized suggestions for budgeting or savings."
+}
+
+Ensure the response is a valid JSON object. Keep each field concise but informative.
+
+Transaction Data: ${JSON.stringify(payload, null, 2)}`;
+
+        const result = await genAI.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: prompt
+        });
+
+        let text = '';
+        if (result && result.candidates && result.candidates.length > 0 && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts.length > 0) {
+            text = result.candidates[0].content.parts[0].text || '';
+        }
+
+        if (!text) {
+            throw new Error('Empty or invalid response from Gemini API');
+        }
+
+        // Extract JSON string from the response
+        const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/);
+        let jsonString = '';
+        if (jsonMatch && jsonMatch[1]) {
+            jsonString = jsonMatch[1].trim();
+        } else {
+            // Fallback if no ```json block is found, try to parse the whole text
+            jsonString = text.trim();
+        }
+
+        let analysis;
+        try {
+            analysis = JSON.parse(jsonString);
+        } catch (e) {
+            throw new Error('Failed to parse Gemini response as JSON: ' + jsonString);
+        }
+
+        return { analysis };
+    } catch (error) {
+        console.error('Error analyzing spending with Gemini API:', error);
+        return {
+            analysis: {
+                patterns: "Unable to analyze spending at this time.",
+                recurringExpenses: "",
+                spikes: "",
+                suggestions: ""
+            }
+        };
+    }
+}
+
+
+module.exports = { parseTransaction, parseTransactionWithDate, analyzeSpending };

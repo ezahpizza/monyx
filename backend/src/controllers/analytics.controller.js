@@ -1,4 +1,5 @@
 const Transaction = require('../models/transaction.model');
+const { analyzeSpending } = require('../services/gemini.service');
 
 /**
  * @desc    Get financial summary (income, expenses, savings)
@@ -130,4 +131,52 @@ const getSpendingTrends = async (req, res) => {
     }
 };
 
-module.exports = { getSummary, getCategorySpending, getSpendingTrends };
+/**
+ * @desc    Get spending habits analysis
+ * @route   GET /api/analytics/habits
+ * @access  Private
+ */
+const getSpendingHabits = async (req, res) => {
+    const { userId } = req.query;
+    if (!userId) return res.status(400).json({ error: 'userId required' });
+
+    try {
+        // Fetch last 60 days of transactions
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(endDate.getDate() - 60);
+
+        const transactions = await Transaction.find({
+            userId,
+            date: { $gte: startDate, $lte: endDate }
+        }).sort({ date: -1 });
+
+        if (transactions.length === 0) {
+            return res.json({
+                analysis: {
+                    patterns: "No transactions found in the last 60 days.",
+                    recurringExpenses: "",
+                    spikes: "",
+                    suggestions: ""
+                }
+            });
+        }
+
+        const systemDate = new Date().toISOString();
+        const result = await analyzeSpending(transactions, systemDate);
+
+        res.json(result);
+    } catch (error) {
+        console.error('Error in getSpendingHabits:', error);
+        res.status(500).json({
+            analysis: {
+                patterns: "Unable to analyze spending at this time.",
+                recurringExpenses: "",
+                spikes: "",
+                suggestions: ""
+            }
+        });
+    }
+};
+
+module.exports = { getSummary, getCategorySpending, getSpendingTrends, getSpendingHabits };
