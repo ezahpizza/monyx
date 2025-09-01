@@ -6,4 +6,3 @@ README.md
 .env
 .DS_Store
 *.log
-pnpm-lock.yaml
